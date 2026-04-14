@@ -16,7 +16,30 @@
       "Bash(ping -n 6 localhost)",
       "Bash(python)",
       "Bash(ping -n 5 localhost)",
-      "Bash(python -c \"import urllib.request; print\\(urllib.request.urlopen\\('http://localhost:8501'\\).status\\)\")"
+      "Bash(python -c \"import urllib.request; print\\(urllib.request.urlopen\\('http://localhost:8501'\\).status\\)\")",
+      "WebSearch",
+      "WebFetch(domain:investor.oracle.com)",
+      "WebFetch(domain:www.businesswire.com)",
+      "WebFetch(domain:www.kkr.com)",
+      "WebFetch(domain:www.analog.com)",
+      "WebFetch(domain:investor.analog.com)",
+      "WebFetch(domain:www.gurufocus.com)",
+      "WebFetch(domain:www.themarketsdaily.com)",
+      "WebFetch(domain:markets.financialcontent.com)",
+      "WebFetch(domain:www.techinvestments.io)",
+      "WebFetch(domain:www.ptc.com)",
+      "WebFetch(domain:investor.ptc.com)",
+      "WebFetch(domain:www.fool.com)",
+      "WebFetch(domain:www.abiresearch.com)",
+      "WebFetch(domain:www.investing.com)",
+      "WebFetch(domain:www.prnewswire.com)",
+      "WebFetch(domain:blogs.oracle.com)",
+      "WebFetch(domain:intuitionlabs.ai)",
+      "Bash(mv 01_criteria stocks/)",
+      "Bash(mv 07_stocks stocks/)",
+      "Bash(mv CLAUDE.md stocks/)",
+      "Bash(mv 02_dashboard app/)",
+      "Bash(mv 03_dcf app/)"
     ]
   }
 }
