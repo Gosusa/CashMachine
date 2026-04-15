@@ -39,7 +39,17 @@
       "Bash(mv 07_stocks stocks/)",
       "Bash(mv CLAUDE.md stocks/)",
       "Bash(mv 02_dashboard app/)",
-      "Bash(mv 03_dcf app/)"
+      "Bash(mv 03_dcf app/)",
+      "WebFetch(domain:www.panabee.com)",
+      "Bash(python scripts/build_report.py KKR)",
+      "Bash(python scripts/build_report.py ORCL)",
+      "Bash(mkdir -p ORCL KKR)",
+      "Bash(mv ORCL_*.md ORCL_*.txt ORCL/)",
+      "Bash(mv KKR_*.md KKR_*.txt KKR/)",
+      "Bash(python scripts/build_report.py PTC)",
+      "Bash(python \"c:/Stocks/CashMachine/scripts/build_report.py\" SPGI)",
+      "Bash(ls c:/Stocks/CashMachine/stocks/02_stocks/*/)",
+      "Bash(wc -l \"c:/Stocks/CashMachine/stocks/02_stocks/ORCL/\"*.md \"c:/Stocks/CashMachine/stocks/02_stocks/ORCL/\"*.txt)"
     ]
   }
 }
