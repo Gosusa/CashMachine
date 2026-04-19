@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import AuthGuard from "@/components/AuthGuard";
 
 type Stock = {
   ticker: string;
@@ -42,6 +43,7 @@ export default function StocksPage() {
   });
 
   return (
+    <AuthGuard>
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">종목 리서치</h1>
 
@@ -118,5 +120,6 @@ export default function StocksPage() {
         <p className="text-center text-zinc-500 py-10">검색 결과가 없습니다.</p>
       )}
     </div>
+    </AuthGuard>
   );
 }

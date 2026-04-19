@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import AuthGuard from "@/components/AuthGuard";
 
 type StockDetail = {
   ticker: string;
@@ -172,6 +173,7 @@ export default function StockDetailPage() {
   }
 
   return (
+    <AuthGuard>
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* 상단 네비 */}
       <Link
@@ -261,5 +263,6 @@ export default function StockDetailPage() {
         </ReactMarkdown>
       </div>
     </div>
+    </AuthGuard>
   );
 }
