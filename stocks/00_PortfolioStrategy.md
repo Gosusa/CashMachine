@@ -13,7 +13,7 @@
 요청: **"포트폴리오 분석해줘"**
 
 - 이 파일의 보유 종목 리스트를 읽는다
-- 각 종목의 `02_stocks/{TICKER}/{TICKER}_revaluation.md` (없으면 `{TICKER}_base.md`) 를 참조한다
+- 각 종목의 `02_tickers/{TICKER}/{TICKER}_revaluation.md` (없으면 `{TICKER}_base.md`) 를 참조한다
 - 포트폴리오 차원의 분석을 수행한다
 
 구체적인 분석 항목/방법론은 추후 정의 예정.
