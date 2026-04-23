@@ -5,6 +5,15 @@
 #  update 모드는 별도 가이드 작성 후 추가 예정
 # ============================================================
 
+# ── 실행 가드: 가이드 리뉴얼 중 루프 차단 ──
+# 02_tickers/CLAUDE.md (개인 분석 워크플로우) 재작성이 완료될 때까지 루프 차단.
+# 재작성 완료 후 이 블록을 제거한다.
+echo "🚫 루프 실행 차단 중 — 가이드 리뉴얼 완료까지"
+echo "   - 02_base_guide.md (7섹션 구조): 완료"
+echo "   - 02_tickers/CLAUDE.md (개인 분석 워크플로우): 재작성 필요"
+echo "   재작성 완료 시 scripts/run_analysis.sh 상단 가드 블록을 제거하세요."
+exit 1
+
 set -uo pipefail  # -e 제외: 개별 실패를 if로 직접 처리
 
 # ── Ctrl+C (SIGINT) 처리 ──
@@ -29,7 +38,6 @@ trap trap_handler SIGINT
 REPO_ROOT="c:/Stocks/CashMachine"
 UNIVERSE="$REPO_ROOT/stocks/02_tickers/UNIVERSE.md"
 TICKERS_DIR="$REPO_ROOT/stocks/02_tickers"
-APP_DATA_DIR="$REPO_ROOT/app/data"
 LOG_BASE="$REPO_ROOT/scripts/logs"
 RUN_ID="$(date +%Y%m%d_%H%M%S)"
 LOG_DIR="$LOG_BASE/$RUN_ID"
@@ -95,17 +103,12 @@ cleanup_failed() {
   local had_dir="$2"  # 분석 전 폴더 존재 여부
   local ticker_log="$LOG_DIR/${ticker}.log"
   local ticker_dir="$TICKERS_DIR/$ticker"
-  local app_dir="$APP_DATA_DIR/$ticker"
 
   if [[ "$had_dir" == false ]]; then
     # 신규 분석이었으면 생긴 폴더 통째로 삭제
     if [[ -d "$ticker_dir" ]]; then
       rm -rf "$ticker_dir"
       echo "  정리: $ticker_dir 삭제" | tee -a "$ticker_log" "$SUMMARY"
-    fi
-    if [[ -d "$app_dir" ]]; then
-      rm -rf "$app_dir"
-      echo "  정리: $app_dir 삭제" | tee -a "$ticker_log" "$SUMMARY"
     fi
   else
     echo "  기존 폴더 존재 — 정리 스킵 (수동 확인 필요)" | tee -a "$ticker_log" "$SUMMARY"
@@ -133,9 +136,9 @@ updated = False
 
 for i, line in enumerate(lines):
     if pattern.match(line):
-        # | Ticker | Base   | Stress   | AppReport   | Revaluation   | Last Updated   |
+        # | Ticker | Base   | AppReport   | Revaluation   | Last Updated   |
         t = ticker
-        lines[i] = f'| {t:<6} | {\"Y\":<6} | {\"Y\":<8} | {\"Y\":<11} | {\"\":<13} | {today:<14} |\n'
+        lines[i] = f'| {t:<6} | {\"Y\":<6} | {\"Y\":<11} | {\"\":<13} | {today:<14} |\n'
         updated = True
         break
 
@@ -226,18 +229,15 @@ main() {
     fi
 
     # 필수 파일 존재 여부 검증 (exit 0이어도 파일이 없으면 실패 처리)
+    # 스트레스 테스트는 base.md Section 6에 통합되어 별도 파일 없음
     local base_file="$TICKERS_DIR/$ticker/${ticker}_base.md"
-    local stress_file="$TICKERS_DIR/$ticker/${ticker}_stress.md"
-    local app_file="$APP_DATA_DIR/$ticker/${ticker}_analysis.md"
     local files_ok=true
 
     if [[ "$exit_code" -eq 0 ]]; then
-      for required in "$base_file" "$stress_file" "$app_file"; do
-        if [[ ! -f "$required" ]]; then
-          echo "⚠️  필수 파일 누락: $required" | tee -a "$ticker_log" "$SUMMARY"
-          files_ok=false
-        fi
-      done
+      if [[ ! -f "$base_file" ]]; then
+        echo "⚠️  필수 파일 누락: $base_file" | tee -a "$ticker_log" "$SUMMARY"
+        files_ok=false
+      fi
     fi
 
     if [[ "$exit_code" -eq 0 && "$files_ok" == true ]]; then
