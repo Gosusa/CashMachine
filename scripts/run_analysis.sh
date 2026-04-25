@@ -44,7 +44,7 @@ LOG_DIR="$LOG_BASE/$RUN_ID"
 SUMMARY="$LOG_DIR/summary.log"
 
 # ── Node.js / Claude CLI PATH 추가 ──
-export PATH="/c/Users/cjk06/AppData/Roaming/npm:/c/Program Files/nodejs:$PATH"
+export PATH="$APPDATA/npm:/c/Program Files/nodejs:$PATH"
 
 mkdir -p "$LOG_DIR"
 
