@@ -218,7 +218,7 @@ subscriptions(id, user_id, stripe_customer_id, stripe_sub_id, plan, status, curr
 | 2. 성장 분석 | AI | business.json, philosophy, dcf_methods, factor_catalog | growth.json/md |
 | 3. DCF Factor 산정 | AI | business.json, growth.json, dcf_methods, factor_catalog | dcf_factors.json |
 | 4. DCF 계산 | **Python 코드** | dcf_factors.json, dcf_methods | dcf_results.json |
-| 5. 리포트 작성 | AI | business.json, growth.json, dcf_results.json, philosophy | report.md/json |
+| 5. 리포트 작성 | AI | business.json, growth.json, dcf_factors.json, dcf_results.json, philosophy | report.md/json |
 
 **모듈 4가 코드인 이유**: DCF는 결정적 산수. AI가 산수 틀리면 안 됨. Factor가 정해지면 같은 입력 = 같은 출력 보장. 사용자가 UI에서 Factor 슬라이더 만져도 즉시 새 결과 (AI 재호출 X).
 
