@@ -55,6 +55,7 @@ referenced_by:
 | `net_debt` | 순부채 | 확정 | — | — | ✅ BS (총부채 − 현금성 자산) |
 | `minority_interest` | 소수주주 지분 | 확정 | — | — | ✅ BS Non-controlling interest |
 | `non_operating_assets` | 비영업자산 | 확정 | — | — | ✅ BS (장기 투자·잉여 부동산 등) |
+| `corporate_overhead_annual` | 회사 차원 corporate cost (HQ overhead·회사 R&D·executive comp 등) — segment 배분 X, 회사 차원 영구 after-tax PV로 차감 | 확정 | — | — | ✅ 재무제표 (Corporate/Unallocated 항목 + 별도 식별. 회사 단위 영구 비용) |
 | `diluted_shares_outstanding` | 희석 주식수 | 확정 | — | — | ✅ Quarterly report (Diluted, RSU·옵션·전환사채 포함) |
 
 ---
@@ -65,7 +66,7 @@ referenced_by:
 
 안정 FCF 생성 사업부 (제조·소비재·산업재·성숙 SaaS).
 
-**확정값** (시나리오 무관):
+**Invariant** (시나리오 무관):
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
@@ -75,16 +76,25 @@ referenced_by:
 | `tax_rate` | 실효세율 | — | — | (회사 단위 또는 사업부 override) |
 | `da_pct_revenue` | D&A / 매출 | — | — | ✅ 재무제표 3년 평균 |
 | `nwc_pct_revenue_change` | NWC 변동 / ΔRevenue | — | — | ✅ 재무제표 3년 평균 |
+| `capex_pct_revenue_start` | t=0 CapEx 비율 (buildout 피크 케이스 시 높음) | `moats[].lens 4 자본 경량성` (참고) | ✅ `capex_response` (회사 가이던스 단기) | — |
+| `capex_pct_revenue_end` | t=N CapEx 비율 (정상화). 변동 없으면 start = end | — | ✅ `capex_response` (장기 정상화) + `structural_insights.capital_intensity_direction` | — |
+| `ebit_margin_baseline_start` | t=0 segment-direct EBIT 마진 (early-stage 시 낮음/음수). corporate 제외 | ✅ `operating_income_amount/revenue_amount` LTM (early-stage 시 현재 음수 마진) | ✅ `margin_response` (early baseline) | — |
+| `ebit_margin_baseline_end` | t=N segment-direct EBIT 마진 (정상화). 변동 없으면 start = end | — | ✅ `margin_response` (정상화 baseline) + `structural_insights.operating_leverage_direction` | — |
 | `terminal_method` | `'gordon'` \| `'exit_multiple'` | — | — | (모듈 3 판단) |
 
-**시나리오별** (Bear/Base/Bull):
+**Driver** (시나리오별 — 본질 분기점 1개):
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
-| `revenue_cagr` | 연평균 매출 성장률 | `revenue_growth_yoy` (LTM 추세 검증용) | ✅ `scenario_anchors.*.revenue_cagr_anchor` | — |
-| `ebit_margin_start` | 1년차 EBIT 마진 | ✅ `operating_income_amount/revenue_amount` LTM | ✅ `scenario_anchors.*.margin_anchor` | — |
-| `ebit_margin_end` | N년차 EBIT 마진 (선형 보간) | — | ✅ `margin_anchor` + `structural_insights.operating_leverage_direction` | — |
-| `capex_pct_revenue` | CapEx / 매출 | `moats[].lens 4 자본 경량성` (참고) | ✅ `scenario_anchors.*.capex_anchor` + `structural_insights.capital_intensity_direction` | — |
+| `driver_scenarios.{bear/base/bull}.revenue_cagr` | 연평균 매출 성장률 (driver) | `revenue_growth_yoy` (LTM 추세 검증용) | ✅ `driver.{bear/base/bull}_anchor` | — |
+
+**Causal** (driver → 다른 변수 인과 룰, 시나리오 무관):
+
+| Factor | 정의 | M1 출처 | M2 출처 | 외부 |
+|---|---|---|---|---|
+| `causal.margin_leverage` | 매출 cagr delta → t=N 마진 delta 계수 (0이면 fixed) | — | ✅ `margin_response` (operating leverage 적용 시 계수) + `structural_insights.operating_leverage_direction` | — |
+| `causal.margin_narrative` | 인과 적용 근거 narrative | — | ✅ `margin_response` 그대로 + 정량 환산 | — |
+| `causal.capex_narrative` | capex 적용 근거 narrative | — | ✅ `capex_response` 그대로 + 정량 환산 | — |
 
 **Terminal**:
 
@@ -127,12 +137,14 @@ referenced_by:
 | `coe` | Cost of Equity | — | — | ✅ 회사 WACC 기반 + 금융섹터 +1~2%p 프리미엄 |
 | `dividend_payout` | 배당성향 | — | — | ✅ 재무제표 3년 평균 |
 
-**시나리오별** (Bear/Base/Bull):
+**Driver** (시나리오별 — ROE trajectory가 driver):
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
-| `roe_start` | 1년차 ROE | ✅ `moats[]` (해자 강도가 ROE 결정) | ✅ `compound_engine.reinvestment_roic_vs_wacc` | (재무제표 LTM ROE 검증) |
-| `roe_terminal` | N년차 ROE (선형 보간) | `moats[].lens 5 장기 지속성` | ✅ `structural_insights.reinvestment_roic_direction` | — |
+| `driver_scenarios.{bear/base/bull}.roe_start` | 1년차 ROE (driver 시작) | ✅ `moats[]` (해자 강도가 ROE 결정) | ✅ `driver.bear/base/bull_anchor` (reinvestment_roic_vs_wacc 인과) | (재무제표 LTM ROE 검증) |
+| `driver_scenarios.{bear/base/bull}.roe_terminal` | N년차 ROE (선형 보간 끝점) | `moats[].lens 5 장기 지속성` | ✅ `structural_insights.reinvestment_roic_direction` | — |
+
+> Method C는 ROE 자체가 driver — start·end 두 값으로 trajectory 표현. 다른 변수 인과 없음 (causal 생략).
 
 **Terminal**:
 
@@ -148,7 +160,7 @@ referenced_by:
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
-| `assets[]` | 자산 목록 | (사업부에 속한 자산 인식) | ✅ `scenario_anchors` (Cap Rate·자산가치 시나리오 변동 시) | ✅ 자산 시장가치 산출 |
+| `assets[]` | 자산 목록 | (사업부에 속한 자산 인식) | (default 시나리오 무관 — 드물게 시장 환경 driver 시 M2 `driver` 인용) | ✅ 자산 시장가치 산출 |
 | `assets[].kind` | `'real_estate'`\|`'reserves'`\|`'equity'`\|`'other'` | — | — | (모듈 3 분류) |
 | `assets[].value` | 시장가치 | — | — | ✅ 평가 방식별 산출 |
 | `assets[].discount` | 유동성·세금 할인 | — | — | ✅ 자산 종류별 표준 |
@@ -169,20 +181,22 @@ referenced_by:
 
 현재 이익·FCF가 미래 정상화 수준 반영 못 함 (고성장 적자·사이클 초기·IPO 직후).
 
-**확정값**:
+**Invariant** (시나리오 무관):
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
 | `metric_name` | `'sales'`\|`'ebitda'`\|`'eps'` | `category` (참고) | — | (모듈 3 판단) |
 | `years_to_normalize` | 정상화 시점 N | `strategic_bet.time_horizon` | ✅ scenario narrative | — |
 | `discount_rate` | 미래 → 현재 환산 할인율 | — | — | ✅ 10%+ 권장 (일반 WACC보다 높게) |
+| `multiple` | 적용 멀티플 (peer 역사 평균, 시나리오 무관) | — | — | ✅ peer 역사 범위 |
 
-**시나리오별 또는 확정**:
+**Driver** (시나리오별 — metric이 driver):
 
 | Factor | 정의 | M1 출처 | M2 출처 | 외부 |
 |---|---|---|---|---|
-| `metric_y_n` | Y_N 시점 지표 값 | — | ✅ `scenario_anchors.*` 환산 | — |
-| `multiple` | 적용 멀티플 | — | (시나리오 변동 가능) | ✅ peer 역사 범위 |
+| `driver_scenarios.{bear/base/bull}.metric_y_n` | Y_N 시점 지표 값 (driver) | — | ✅ `driver.bear/base/bull_anchor` 환산 | — |
+
+> Method E는 metric이 driver. multiple은 invariant (peer 역사). 사이클 사업의 peak/trough multiple 차이는 metric_y_n 자체에 사이클 phase 반영하면 충분.
 
 **경고**: 보조용. 단독 주된 목표가 산출 금지. 가능하면 다른 방법(A·D)과 병기.
 
@@ -200,7 +214,7 @@ referenced_by:
 | `category` | Method E `metric_name`, Method A `exit_multiple` 보정 |
 | `fiscal_year` | A `fiscal_year`, baseline 확정값 |
 | `revenue_amount` | A `revenue_y0`, E `metric_y_n` 검증 |
-| `operating_income_amount` | A `ebit_margin_start` LTM 시작점 |
+| `operating_income_amount` | A `ebit_margin_baseline_start` LTM 시작점 (early-stage 시 현재 음수 마진 가능) |
 | `revenue_growth_yoy` | A `revenue_cagr` Base 시나리오 검증 |
 | `revenue_model.profit_levers` | A `ebit_margin` 정합성 (가격 인상 lever 시 margin 상향) |
 | `moats[]` (특히 lens 4·5) | A `capex_pct_revenue`, `terminal_g` 보수성, C `roe_start` |
@@ -224,13 +238,14 @@ referenced_by:
 | `scenarios.bear/base/bull` (thesis·필요조건·근거·증거) | factor_rationale narrative |
 | `current_position` | A·E LTM 위치 검증 |
 | `conclusion.fifteen_pct_feasibility` | factor 보수성 정렬 |
-| **`conclusion.handoff.scenario_anchors.bear/base/bull`**: | **시나리오별 factor 환산의 핵심** |
-| ⤷ `revenue_cagr_anchor` | A `revenue_cagr` |
-| ⤷ `margin_anchor` | A `ebit_margin_start/end`, C `roe_start/terminal` |
-| ⤷ `capex_anchor` | A `capex_pct_revenue` |
-| ⤷ `key_basis` | factor_rationale |
-| `conclusion.handoff.structural_insights.capital_intensity_direction` | A `capex_pct_revenue` 보정 |
-| `conclusion.handoff.structural_insights.operating_leverage_direction` | A `ebit_margin_end` (마진 확장 가능성) |
+| **`conclusion.handoff.driver`**: | **driver 시나리오별 환산의 핵심 (옵션 A)** |
+| ⤷ `type` | M3 driver type 인식 (default `revenue_cagr`) |
+| ⤷ `bear_anchor` / `base_anchor` / `bull_anchor` | A `driver_scenarios.{bear/base/bull}.revenue_cagr` 환산 |
+| ⤷ `rationale` | factor_rationale (driver 식별 근거) |
+| **`conclusion.handoff.margin_response`** | A `causal.margin_leverage` (정량 계수) + `causal.margin_narrative` + invariant `ebit_margin_baseline_start/end` (시계열 trajectory) |
+| **`conclusion.handoff.capex_response`** | A invariant `capex_pct_revenue_start/end` (시계열 trajectory, 회사 가이던스) + `causal.capex_narrative` |
+| `conclusion.handoff.structural_insights.capital_intensity_direction` | A `capex_pct_revenue_start/end` baseline 보정 |
+| `conclusion.handoff.structural_insights.operating_leverage_direction` | A `causal.margin_leverage` 보정 |
 | `conclusion.handoff.structural_insights.reinvestment_roic_direction` | C `roe_terminal`, A·C 효과성 |
 | `conclusion.handoff.dcf_method_review` | 방법 확정 (M3 §5.2) |
 
@@ -264,9 +279,12 @@ referenced_by:
 ### 5.2 모듈 2 작성 시
 
 이 catalog의 §4.2를 기준으로 `growth.json`의 핸드오프 필드를 채움:
-- `conclusion.handoff.scenario_anchors.bear/base/bull` 필수 (M3 시나리오 변환의 핵심)
-- 각 anchor에 **정성 (low/mid/high) + 정량 단서 (range·과거 사례)** 둘 다 채움
-- `conclusion.handoff.structural_insights` 필수 (capex·margin·ROE 보정)
+- `conclusion.handoff.driver` 필수 (사업부 본질 분기점 1개 — type + bear/base/bull anchor + rationale)
+  - 각 anchor에 **정성 (low/mid/high) + 정량 단서 (range·과거 사례)** 둘 다 채움
+  - 변수 여러 개 시나리오별 독립 fitting 금지 (격차 폭증 방지)
+- `conclusion.handoff.margin_response` 필수 (driver → 마진 인과 narrative + 정량 단서)
+- `conclusion.handoff.capex_response` 필수 (driver → capex 인과 narrative + 정량 단서)
+- `conclusion.handoff.structural_insights` 필수 (capex·margin·ROE 보정 — 시나리오 무관 정성)
 - `conclusion.handoff.dcf_method_review` 명시 (M1 후보 그대로 / revise 권고)
 - `structural_change.compound_engine` 명시 (재투자 ROIC vs WACC)
 

@@ -2,11 +2,12 @@
 //
 // 흐름:
 //   ticker → [모듈 1: AI] → BusinessAnalysis
-//                          → [모듈 2: AI] → GrowthAnalysis
-//                                          → [모듈 3: AI] → DcfFactors
-//                                                          → [모듈 4: 코드] → DcfResults
+//                          → [모듈 2: AI] → GrowthAnalysis (driver/causal/invariant + 두 판정)
+//                                          → [모듈 3: AI] → DcfFactors (Method A·B·C·D·E + corporate_overhead)
+//                                                          → [모듈 4: 코드] → DcfResults (corporate_overhead_pv 차감)
 //                                                                            → [모듈 5: AI] → Report
 //
+// 옵션 A 패턴: driver 1개 시나리오별 + invariant + (필요 시) causal
 // 가이드: ../../guides/analysis/
 
 export * from './segment';

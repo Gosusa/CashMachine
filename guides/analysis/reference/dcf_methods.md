@@ -71,12 +71,14 @@ TV (Exit Multiple) = EBITDA_N × Multiple
 |---|---|---|
 | forecast_years | int | 예측 기간 N |
 | revenue_y0 | number | 직전 연도 매출 |
-| revenue_cagr | number | 연평균 매출 성장률 (%) |
-| ebit_margin_start | number | 1년차 EBIT 마진 (%) |
-| ebit_margin_end | number | N년차 EBIT 마진 (%, 선형 보간) |
+| revenue_cagr | number | 연평균 매출 성장률 (driver, 시나리오별) (%) |
+| ebit_margin_baseline_start | number | t=0 segment-direct EBIT 마진 (early-stage 시 낮음/음수, corporate cost 제외) (%) |
+| ebit_margin_baseline_end | number | t=N segment-direct EBIT 마진 (정상화). 변동 없으면 start = end (%) |
+| margin_leverage | number | 매출 cagr delta → t=N 마진 delta 계수 (causal, 시나리오 무관). 0이면 fixed |
 | tax_rate | number | 실효세율 (%) |
 | da_pct_revenue | number | D&A / 매출 (%) |
-| capex_pct_revenue | number | CapEx / 매출 (%) |
+| capex_pct_revenue_start | number | t=0 CapEx / 매출 (시계열 trajectory 시작점, 시나리오 무관) (%) |
+| capex_pct_revenue_end | number | t=N CapEx / 매출 (선형 보간 끝점). 변동 없으면 start = end (%) |
 | nwc_pct_revenue_change | number | NWC 변동 / ΔRevenue (%) |
 | wacc | number | (%) |
 | terminal_method | enum | `'gordon'` \| `'exit_multiple'` |
@@ -154,10 +156,10 @@ TV (Exit Multiple) = EBITDA_N × Multiple
 |---|---|---|
 | forecast_years | int | 예측 기간 N |
 | bv_y0 | number | 현재 Book Value |
-| roe_start | number | 1년차 ROE (%) |
-| roe_terminal | number | N년차 ROE (%, 선형 보간) |
 | coe | number | Cost of Equity (%) |
 | dividend_payout | number | 배당성향 (%, BV 성장률 계산용) |
+| roe_start | number | 1년차 ROE (driver, 시나리오별) (%) |
+| roe_terminal | number | N년차 ROE (driver, 시나리오별, 선형 보간) (%) |
 | terminal_g | number | (%) |
 
 **수학적 제약**:
@@ -242,8 +244,8 @@ Equity 기반 멀티플 (`'eps'` = P/E):
 | 변수 | 타입 | 설명 |
 |---|---|---|
 | metric_name | enum | `'sales'` \| `'ebitda'` \| `'eps'` |
-| metric_y_n | number | Y_N 시점 지표 값. `'sales'`/`'ebitda'`는 회사 전체 $M, `'eps'`는 EPS × 희석 주식수로 환산해 입력 |
-| multiple | number | 적용 멀티플 |
+| metric_y_n | number | Y_N 시점 지표 값 (driver, 시나리오별). `'sales'`/`'ebitda'`는 회사 전체 $M, `'eps'`는 EPS × 희석 주식수로 환산해 입력 |
+| multiple | number | 적용 멀티플 (peer 역사 평균, 시나리오 무관 invariant) |
 | years_to_normalize | int | N (정상화 시점) |
 | discount_rate | number | (%) |
 
@@ -259,13 +261,16 @@ Equity 기반 멀티플 (`'eps'` = P/E):
 
 **회사 종합** (두 bucket 합산):
 ```
-회사 주주가치 = [Σ 'operating_ev' bucket 사업부 − 회사 Net Debt − Minority + Non-op]
+Corporate Overhead PV = corporate_overhead_annual × (1 − tax_rate) / WACC      ← 영구 after-tax PV
+회사 주주가치 = [Σ 'operating_ev' bucket 사업부 − 회사 Net Debt − Minority + Non-op − Corp PV]
              + [Σ 'equity' bucket 사업부]
 회사 목표가   = 회사 주주가치 / 희석 주식수
 ```
 
 > 각 사업부는 메서드 정의에 따라 **`'operating_ev'` bucket** 또는 **`'equity'` bucket**으로 출력 (§3 메서드별 출력 bucket 참조).
-> Net Debt · Minority · Non-op은 `'operating_ev'` bucket에만 한 번 적용. `'equity'` bucket은 이미 부채·우선주 등이 차감되어 그대로 합산.
+> Net Debt · Minority · Non-op · Corporate Overhead PV는 `'operating_ev'` bucket에만 한 번 적용. `'equity'` bucket은 이미 부채·우선주 등이 차감되어 그대로 합산.
+
+> **Corporate Overhead 처리 원칙**: HQ overhead·회사 차원 R&D·executive comp 등 회사 단위 비용은 **segment에 배분 X**. segment는 segment-direct margin 사용 (corporate 제외). 회사 차원에서 영구 after-tax PV로 차감. 이유: 회사가 segment 폐지해도 corporate cost 안 사라지므로 segment에 배분하면 음수 segment 가치 발생 (회계 편의의 산물). 시나리오 무관 동일 차감.
 
 **시나리오 합산 — 일관성 필수**:
 ```

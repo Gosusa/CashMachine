@@ -22,6 +22,8 @@ outputs:
 
 다음 모듈(DCF Factor 산정)이 시나리오를 정량 factor로 환산할 수 있도록 **정성 anchor와 정량 단서**를 완성하는 게 목적. 또한 회사 차원 두 판정 (**15%+ 복리 / 해자 평생 보유**)을 산출해 모듈 5 리포트 TL;DR에 직접 공급한다.
 
+시나리오 정량 환산은 **본질 분기점 1개 (driver)의 변동**으로 표현한다. 다른 변수(마진·capex)는 driver의 인과 결과 또는 시나리오 무관 invariant. 변수별 독립 fitting은 시나리오 격차 폭증을 만들어 가치 산정 신뢰도를 훼손한다.
+
 ---
 
 ## 2. 입력 (Inputs)
@@ -115,13 +117,20 @@ outputs:
 
 **다음 모듈(DCF Factor) 환산 핸드오프**:
 
-| 시나리오 | 매출 CAGR anchor | 마진 anchor | CapEx anchor | 핵심 근거 |
-|---------|--------------|-----------|------------|---------|
-| Bear | {정성 + 정량 단서} | ... | ... | ... |
-| Base | | | | |
-| Bull | | | | |
+**Driver** (본질 분기점 1개, 시나리오별 변동):
+- **Type**: {사업부 본질 분기점 — default 'revenue_cagr', 케이스별 자유 정의}
+- **Rationale**: {왜 이게 사업부의 본질 분기점인지 — (b) 사업 구조 변화에서 도출}
+- **Bear anchor**: {정성 + 정량 단서, 예: "low 5-8%, 침체기 -5% 사례"}
+- **Base anchor**: {정성 + 정량 단서}
+- **Bull anchor**: {정성 + 정량 단서}
 
-**구조 인사이트**:
+**Margin response** (driver → 마진 인과, 시나리오 무관 룰):
+- {narrative + 정량 단서 — 예: "operating leverage 1.5x (SaaS standard), Base baseline 30%, 매출 +10% → 마진 +1.5%p"}
+
+**Capex response** (driver → capex 인과, 시나리오 무관 룰):
+- {narrative + 정량 단서 — 예: "회사 capex 가이던스 25% (FY26), 시나리오 무관 비율 — 매출 따라 절대값 자동 변화"}
+
+**구조 인사이트** (시나리오 무관 정성):
 - 자본집약도: {경량/중간/집약 + 근거 한 줄}
 - Operating leverage: {강함/중간/약함 + 근거 한 줄}
 - 재투자 ROIC 방향: {강화/유지/약화 + 근거 한 줄}
@@ -196,15 +205,18 @@ outputs:
         feasibility_basis,
         key_drivers: [], key_risks: [],
         handoff: {
-          scenario_anchors: {
-            bear: {
-              revenue_cagr_anchor,               // 정성 + 정량 단서 ("low + 5-8% range, 침체기 -15% 사례")
-              margin_anchor, capex_anchor,
-              key_basis
-            },
-            base: {...}, bull: {...}
+          driver: {
+            type,                                // 사업부 본질 분기점 (자유 string, default: 'revenue_cagr')
+            bear_anchor,                         // 정성 + 정량 단서 ("low 5-8%, 침체기 -5% 사례")
+            base_anchor,
+            bull_anchor,
+            rationale                            // 왜 이게 본질 분기점인지 — (b) 사업 구조 변화에서 도출
           },
-          structural_insights: {
+          margin_response,                       // driver → 마진 인과 narrative + 정량 단서
+                                                 //   (예: "operating leverage 1.5x SaaS standard, Base baseline 30%")
+          capex_response,                        // driver → capex 인과 narrative + 정량 단서
+                                                 //   (예: "회사 가이던스 25%, 시나리오 무관 비율 — 매출 따라 절대값 자동")
+          structural_insights: {                 // 시나리오 무관 보강 정성
             capital_intensity_direction,         // 'light'|'moderate'|'heavy' + narrative
             operating_leverage_direction,        // 'strong'|'moderate'|'weak' + narrative
             reinvestment_roic_direction          // 'strengthening'|'stable'|'weakening' + narrative
@@ -330,9 +342,52 @@ outputs:
 - **핵심 성장 동력** — (b) 구조 변화 + (c) 시나리오에서 가장 강한 1~3
 - **핵심 리스크** — Bear 시나리오 핵심 필요조건의 역방향 1~2
 - **DCF 환산 핸드오프** (→ 모듈 3):
-  - **시나리오별 anchor 표** — Bear/Base/Bull 각각 매출 CAGR·마진·CapEx에 대해 정성 anchor (고/중/저) + 정량 단서 (range·과거 사례)
-  - **구조 인사이트** — 자본집약도 (경량/중간/집약), operating leverage (강함/중간/약함), 재투자 ROIC 방향 (강화/유지/약화) + 각 narrative
-  - **DCF 방법 review** — 모듈 1 후보 그대로 통과 또는 revise 권고 (의견)
+  - **Driver** — 본질 분기점 1개 식별. (b) 사업 구조 변화에서 도출. type + bear/base/bull anchor + rationale
+  - **Margin response** — driver → 마진 인과 룰 (시나리오 무관)
+  - **Capex response** — driver → capex 인과 룰 (시나리오 무관)
+  - **구조 인사이트** — 자본집약도, operating leverage, 재투자 ROIC 방향 (시나리오 무관 정성)
+  - **DCF 방법 review** — 모듈 1 후보 그대로 통과 또는 revise 권고
+
+##### Driver 식별
+
+**원칙**: 시나리오 분기점은 사업부당 단 1개. 변수 여러 개를 시나리오별로 독립 fitting하면 격차 폭증.
+
+**Type 선택**: 사업부의 본질 분기점이 무엇이냐. (b) 사업 구조 변화 분석에서 도출. default `revenue_cagr`이지만 한정 X — 케이스별 정의.
+
+자주 쓰이는 패턴 (참고, 한정 X):
+- 매출 CAGR: SaaS·자본집약 신사업·일반 성장 사업
+- 가격·마진 압박: 제약 (특허 만료·약가 인하), commodity, 인플레이션 큰 사업
+- Capex 사이클: 자원 E&P, 반도체 fab
+- 가격·수량 (이중): 일부 소비재
+
+##### Margin response (인과 룰)
+
+driver 변동이 마진에 어떻게 영향 주는지 narrative + 정량 단서로 명시. **시나리오 무관 룰**.
+
+자주 쓰이는 패턴 (참고, 한정 X):
+- Operating leverage: SaaS·고정비 큰 사업 (예: leverage 1.5x, Base baseline 마진 명시 — **segment-direct, corporate cost 제외**)
+- Price pass-through: commodity·인플레이션 (예: pass-through 비율 80%)
+- Fixed baseline: sunset 사업, 마진 안정 (예: baseline 35% 시나리오 무관, t=0=t=N)
+- Early-stage trajectory: 초기 마진 낮음/음수 → 정상화 (예: `baseline_start -50%, baseline_end 25%`. capex와 동일 패턴)
+- Driver와 직접 연결: driver가 마진 자체면 별도 인과 X (driver=margin)
+
+**작성 시**: 정량 단서 (계수·baseline) + 산업·회사 historical 근거.
+
+##### Capex response (인과 룰)
+
+driver 변동이 capex에 어떻게 영향 주는지 narrative + 정량 단서로 명시. **시나리오 무관 룰**.
+
+자주 쓰이는 패턴 (참고, 한정 X):
+- 회사 가이던스 invariant: capex 비율 시나리오 무관 (default — 매출 따라 절대값 자동)
+- Driver react: 회사가 시나리오에 따라 capex 결정 다르게 (Bear 시 절감 등 — 단 인과 일관성 필요)
+- Fixed baseline: 자본 경량 사업 (capex 거의 0)
+
+**작성 시**: 정량 단서 (가이던스 비율·룰) + 회사 historical·전략 근거.
+
+##### Logical consistency 점검
+
+- driver와 margin_response·capex_response가 **인과적으로 일관**되어야. 예: "회수 실패" Bear → capex 줄어드는 게 자연 (capex 늘어나는 react는 모순)
+- structural_insights가 인과 룰과 일관 (예: capital_intensity 'heavy'면 capex 비율 높게)
 
 > WACC·세율·terminal growth·working capital 등 재무 도메인 factor는 **모듈 3에서 자체 산정**. 모듈 2는 성장 관련 인풋만 핸드오프.
 
@@ -354,7 +409,7 @@ outputs:
 - 다음 모듈: [03_dcf_factors.md](./03_dcf_factors.md) — growth.json을 받아 정량 factor 산정 (성장 관련) + 자체 도메인 factor (WACC·세율 등) 추가
 - 가치관 (성장 lens): [reference/philosophy.md](../reference/philosophy.md)
 - DCF 방법 카탈로그: [reference/dcf_methods.md](../reference/dcf_methods.md) — `dcf_method_review` revise 판단 시 §2 판별표 참조, 복리 엔진 질문의 WACC 정의
-- Factor 카탈로그: [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3가 활용하는 M2 핸드오프 필드 매핑 (특히 §4.2 scenario_anchors·structural_insights)
+- Factor 카탈로그: [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3가 활용하는 M2 핸드오프 필드 매핑 (특히 §4.2 driver·margin_response·capex_response·structural_insights)
 
 ---
 
@@ -372,7 +427,9 @@ outputs:
 - [ ] (c) 분기 trigger가 추적 가능한 지표·이벤트로 명시 (threshold + 방향 포함)
 - [ ] (d) LTM 트렌드 방향·가이던스 정합성·시나리오 위치 (정성) 명시
 - [ ] (e) 결론에 15%+ 가능성·핵심 동력·핵심 리스크·DCF 환산 핸드오프 모두 채움
-- [ ] (e) DCF 핸드오프에 시나리오 anchor 표 (정성+정량 단서) + 구조 인사이트 + DCF 방법 review 모두 포함
+- [ ] (e) DCF 핸드오프에 driver(type + 3 anchor + rationale) + margin_response + capex_response + 구조 인사이트 + DCF 방법 review 모두 포함
+- [ ] driver는 사업부당 단 1개 (변수 여러 개 시나리오별 독립 fitting 없음)
+- [ ] margin_response·capex_response가 driver와 인과적으로 일관 (예: 회수 실패 Bear → capex 줄어드는 react가 자연)
 
 **회사 종합·정합:**
 - [ ] 회사 전체 15%+ 가능성 + 해자 평생 보유 가능성 + 종합 성격 포함 (두 판정 모두 YES/조건부/NO 명시)
