@@ -1,7 +1,7 @@
 ---
 kind: analysis-reference
 name: dcf_methods
-version: 0.3.0
+version: 0.4.0
 referenced_by:
   - pipeline/01_business.md     # 사업부 유형 인식
   - pipeline/02_growth.md       # 복리 엔진 WACC 정의 + dcf_method_review 판단
@@ -126,16 +126,21 @@ TV (Exit Multiple) = EBITDA_N × Multiple
 
 **변수 정의**:
 - **BV** (Book Value) = 주주 지분
-- **ROE** = 순이익 / 평균 BV
+- **BV_t** = **period t 시작 시점** BV (= period (t-1) 말 BV). `BV_1 = BV_y0` (initial condition)
+- **BV recursion**: `BV_(t+1) = BV_t × (1 + (1 − 배당성향) × ROE_t)` for t = 1..N
+- **ROE_t** = period t 동안 발생한 순이익 / BV_t (beginning-of-period BV 기준)
 - **CoE** = Rf + β × (Rm − Rf), 금융섹터는 +1~2%p 프리미엄 권장
 - **BV 성장률** = (1 − 배당성향) × ROE
+- **T** (terminal index) = N+1. 즉 `BV_T = BV_(N+1)` = period N 말 BV
 
 **계산 공식**:
 ```
-사업부 Equity = BV_현재
-              + Σ [(ROE_t − CoE) × BV_t / (1+CoE)^t]
-              + Terminal [(ROE_T − CoE) × BV_T / ((CoE − g) × (1+CoE)^N)]
+사업부 Equity = BV_y0
+              + Σ_{t=1..N} [(ROE_t − CoE) × BV_t / (1+CoE)^t]
+              + [(ROE_terminal − CoE) × BV_(N+1) / ((CoE − g) × (1+CoE)^N)]
 ```
+
+> **인덱스 표기 정리**: `BV_t`는 항상 period t의 **시작 시점 BV**. forecast 중 (`t=1..N`)에는 BV_t를 ROE_t와 곱하고 (1+CoE)^t로 할인. terminal에서는 BV_(N+1) (= BV_T) 사용.
 
 **교차검증 — 정당화 P/B**:
 ```
