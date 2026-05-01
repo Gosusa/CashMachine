@@ -86,8 +86,8 @@ CashMachineArch/
 
 | 도메인 | 책임 | 위치 |
 |---|---|---|
-| `catalog` | 종목 유니버스, 메타데이터, 가격 데이터 | `apps/web` (조회) + `workers/prices` |
-| `analysis` | base 분석 파일 (생성·버저닝·조회) | `apps/api` (생성) + `apps/web` (조회) |
+| `catalog` | 종목 유니버스, 메타데이터, 가격 데이터, **사업부 매핑** | `apps/web` (조회) + `workers/prices` |
+| `analysis` | **5-모듈 파이프라인** (사업→성장→Factor→DCF→리포트). 모듈별 결과·버저닝·조회 | `apps/api` + `workers/analysis` (생성) + `apps/web` (조회) |
 | `scenario` | 사용자별 시나리오 (생성·조회·수정) | `apps/api` (AI 합성) + `apps/web` (CRUD) |
 | `earnings` | 실적 이벤트, 정합성 체크포인트 | `workers/earnings` + `apps/web` (조회) |
 | `portfolio` | 보유종목, 시뮬레이션, 벤치마크 | `apps/api` (시뮬) + `apps/web` (CRUD) |
@@ -108,22 +108,49 @@ tickers(id, symbol, name, sector, exchange, ...)
 prices_daily(ticker_id, date, open, high, low, close, volume, PK(ticker_id, date))
 sp500_daily(date PK, close)
 
--- 가이드 버저닝 (Git에서 sync)
-guide_versions(id, kind, version, content_md, hash, synced_at)
-  -- kind: 'analysis' | 'scenario' | 'earnings' | 'news_impact'
+-- 사업부 (분석·추적 단위 — 공시 세그먼트 기준)
+ticker_segments(id, ticker_id, name, reported_segment_codes[], 
+                effective_from, effective_to, is_whole_company)
+  -- 공시 세그먼트는 분할 금지, 병합 가능 (현금흐름 본질이 같으면)
+  -- 단일 보고 회사 = is_whole_company=true, reported_segment_codes=[]
+  -- 회사가 보고 구조 바꾸면 effective_to 닫고 새 행
 
--- 분석
-analyses(id, ticker_id, guide_version_id, content_md, model, cost_usd, created_at)
-  -- 같은 ticker라도 가이드/모델 변경 시 새 행. 덮어쓰기 금지.
+segment_quarterly_actuals(segment_id, quarter, revenue, operating_income, ...
+                          PK(segment_id, quarter))
+  -- 분기 워커가 10-Q에서 적재. Factor와 비교해 궤도 판정
+
+-- 가이드 버저닝 (Git에서 sync)
+guide_versions(id, kind, name, version, content_md, hash, synced_at)
+  -- kind: 'analysis-pipeline' | 'analysis-reference' | 'scenario' | 'earnings' | 'news_impact'
+  -- name: 'business' | 'growth' | 'dcf_factors' | 'dcf_compute' | 'report' | 'philosophy' | 'dcf_methods' | ...
+
+-- 분석 (5-모듈 파이프라인. 모듈별로 행을 쌓음 → 부분 재실행·캐싱 가능)
+analyses(id, ticker_id, status, started_at, completed_at)
+  -- 한 번의 분석 실행 (root). status: 'running' | 'completed' | 'failed'
+
+analysis_business(id, analysis_id, guide_version_id, content_md, content_json,
+                  model, cost_usd, created_at)
+analysis_growth(id, analysis_id, business_id FK, guide_version_id,
+                content_md, content_json, model, cost_usd, created_at)
+analysis_dcf_factors(id, analysis_id, growth_id FK, guide_version_id,
+                     content_json, model, cost_usd, created_at)
+analysis_dcf_results(id, analysis_id, factors_id FK, content_json, computed_at)
+  -- 모듈 4 = 코드. AI 비용·model 없음
+analysis_report(id, analysis_id, business_id FK, growth_id FK, dcf_results_id FK,
+                guide_version_id, content_md, content_json, model, cost_usd, created_at)
+
+  -- 모든 모듈 결과 행은 덮어쓰기 금지. 부분 재실행 시 새 행 + 후속 모듈도 재실행.
+  -- 후속 모듈은 자기 입력 모듈의 id를 FK로 추적 → 정확히 어떤 입력으로 만들어졌는지 보존
 
 -- 시나리오
-scenarios(id, user_id, base_analysis_id, name, user_thesis_md, ai_synthesis_md,
+scenarios(id, user_id, base_report_id FK, name, user_thesis_md, ai_synthesis_md,
           guide_version_id, created_at, updated_at)
 
 -- 분기 실적 검증
 earnings_events(id, ticker_id, quarter, report_date, transcript_url, raw_text)
 thesis_checkpoints(id, target_type, target_id, earnings_event_id, alignment_md, score, created_at)
-  -- target_type: 'analysis' | 'scenario'
+  -- target_type: 'report' | 'scenario'
+  -- 추가로 segment_quarterly_actuals와 dcf_factors 비교해 사업부별 궤도 판정
 
 -- 포트폴리오
 portfolios(id, user_id, name, created_at)
@@ -141,35 +168,106 @@ notifications(id, user_id, kind, payload_json, read_at, created_at)
 subscriptions(id, user_id, stripe_customer_id, stripe_sub_id, plan, status, current_period_end)
 ```
 
-자세한 컬럼·인덱스는 `docs/DATA_MODEL.md`로.
+자세한 컬럼·인덱스는 `docs/DATA_MODEL.md`로 (예정).
 
 ### 핵심 원칙
 
-- **AI 결과 행은 절대 덮어쓰기 금지**: 가이드 버전이 바뀌면 새 행. 사용자가 히스토리 비교 가능
-- **시나리오는 base의 특정 버전을 참조**: base 재생성해도 사용자 시나리오 안 깨짐
-- **모든 AI 결과 행에 `guide_version_id`**: 어떤 버전으로 만들어졌는지 추적
+- **AI 결과 행은 절대 덮어쓰기 금지**: 가이드 버전이 바뀌면 새 행. 모듈 단위 재실행 시도 새 행
+- **모듈 간 FK 추적**: `growth → business`, `factors → growth`, `dcf_results → factors`, `report → all` — 정확히 어떤 입력으로 만들어졌는지 보존
+- **부분 재실행 지원**: 모듈 N 재실행 시 후속 모듈도 다시 도는 게 기본. 사용자가 Factor만 만지면 모듈 4·5만 재실행 (비용 절감)
+- **시나리오는 report의 특정 버전을 참조**: 분석 재생성해도 사용자 시나리오 안 깨짐
+- **segment 추적**: 모든 분석 결과는 사업부 단위로 저장. 분기 실적 적재 시 자동으로 궤도 판정 가능
 
 ---
 
-## 6. AI 레이어
+## 6. AI 레이어 + 분석 파이프라인 (모듈식)
+
+분석은 **5개 독립 모듈**의 DAG. 각 모듈은 입력·출력이 명확하고, 독립적으로 재실행·캐싱 가능.
+
+### 6.1 분석 파이프라인 DAG
+
+```
+[reference 가이드 — 모든 모듈이 참조]
+ ├─ philosophy.md
+ └─ dcf_methods.md
+        │
+        ▼ (필요 시 참조)
+
+[모듈 1: 사업 분석] ◀── ticker
+        │ business.json
+        ├──────────┐
+        ▼          │
+[모듈 2: 성장]    │
+        │ growth.json
+        ├─────────┼─────────┐
+        ▼         ▼         │
+[모듈 3: DCF Factor 산정]  │
+        │ dcf_factors.json  │
+        ▼                   │
+[모듈 4: DCF 계산 (코드)]  │
+        │ dcf_results.json  │
+        └────────┬──────────┘
+                 ▼
+        [모듈 5: 리포트] → report.md
+```
+
+| 모듈 | 구현 | 입력 | 출력 |
+|---|---|---|---|
+| 1. 사업 분석 | AI | ticker, philosophy, dcf_methods | business.json/md |
+| 2. 성장 분석 | AI | business.json, philosophy | growth.json/md |
+| 3. DCF Factor 산정 | AI | business.json, growth.json, dcf_methods | dcf_factors.json |
+| 4. DCF 계산 | **Python 코드** | dcf_factors.json | dcf_results.json |
+| 5. 리포트 작성 | AI | business.json, growth.json, dcf_results.json, philosophy | report.md/json |
+
+**모듈 4가 코드인 이유**: DCF는 결정적 산수. AI가 산수 틀리면 안 됨. Factor가 정해지면 같은 입력 = 같은 출력 보장. 사용자가 UI에서 Factor 슬라이더 만져도 즉시 새 결과 (AI 재호출 X).
+
+### 6.2 코드 구조
 
 ```
 ai/
-├── prompts/              # 시스템 프롬프트 (코드)
+├── prompts/                       # 시스템 프롬프트 (코드)
 ├── clients/
-│   ├── anthropic.py     # Claude 래퍼 (caching, retry, cost log)
-│   └── cache.py         # 가이드 캐싱 헬퍼
+│   ├── anthropic.py              # Claude 래퍼 (caching, retry, cost log)
+│   └── cache.py                  # 가이드 캐싱 헬퍼
 ├── pipelines/
-│   ├── analysis.py      # 가이드 + ticker → base 분석
-│   ├── scenario.py      # base + 사용자 thesis → 시나리오
-│   ├── earnings.py      # transcript + base/scenario → alignment
-│   └── news_impact.py   # 뉴스 + base → severity + 분석
-└── guides_loader.py      # DB에서 활성 가이드 로드
+│   ├── analysis/                 # 5-모듈 파이프라인
+│   │   ├── __init__.py          # 오케스트레이션 (DAG 실행)
+│   │   ├── module_1_business.py # AI
+│   │   ├── module_2_growth.py   # AI
+│   │   ├── module_3_factors.py  # AI
+│   │   ├── module_4_dcf.py      # 코드 (DCF 엔진)
+│   │   └── module_5_report.py   # AI
+│   ├── scenario.py               # base report + 사용자 thesis → 시나리오
+│   ├── earnings.py               # transcript + report → alignment
+│   └── news_impact.py            # 뉴스 + report → severity + 분석
+└── guides_loader.py              # DB에서 활성 가이드 로드
 ```
 
-- 가이드는 Git이 origin → 배포/수동 트리거로 DB로 sync (`guide_versions` 테이블)
-- 파이프라인은 DB에서 가이드를 읽어 호출
-- 모든 호출은 `cost_usd` 기록 + Anthropic prompt caching 활성화
+### 6.3 가이드 구조
+
+```
+guides/
+├── analysis/
+│   ├── pipeline/    # 모듈별 가이드 (5개)
+│   │   ├── 01_business.md
+│   │   ├── 02_growth.md
+│   │   ├── 03_dcf_factors.md
+│   │   ├── 04_dcf_compute.md  # 얇음, 코드 명세
+│   │   └── 05_report.md
+│   └── reference/   # 지식 베이스 (모든 모듈이 참조)
+│       ├── philosophy.md
+│       └── dcf_methods.md
+├── scenario/, earnings/, news_impact/  # 다른 도메인 (추후)
+```
+
+### 6.4 원칙
+
+- 가이드는 Git이 origin → 배포/수동 트리거로 `guide_versions` 테이블로 sync
+- 파이프라인은 DB에서 활성 가이드 버전을 읽어 호출
+- 모든 모듈 결과 행에 `guide_version_id` 기록 → 어떤 버전으로 만들어졌는지 추적
+- 모든 AI 호출은 `cost_usd` 기록 + Anthropic prompt caching 활성화 (가이드 캐싱 효과 큼)
+- 모듈 출력은 **md + JSON 동시** — md는 사람이 읽고, JSON은 다음 모듈이 파싱
+  - JSON 스키마: [`packages/shared-types/schemas/`](../packages/shared-types/schemas/)
 
 ---
 
@@ -216,17 +314,33 @@ ai/
 - 모노레포 구조 (위)
 - 가이드 버저닝: Git 원본 + DB sync, AI 결과에 `guide_version_id` 추적
 - 결제 (구독·웹 only)
+- **분석 = 5-모듈 파이프라인** (사업·성장·Factor·DCF·리포트). 모듈 4는 Python 코드
+- **추적 단위 = 공시 세그먼트** (분할 금지, 병합 가능). 단일 보고 회사는 whole company 1개
+- **모듈 출력 = md + JSON 동시**, JSON 스키마는 `packages/shared-types/schemas/`
+- MVP 범위 외: 회피 게이트 (부채/경영진), Damodaran 5규율 교차검증 — 추후 추가 가능
 
 ### 보류 (첫 기능 만들며 결정)
-- 분석 파이프라인의 정확한 엔드포인트 분담 (Next.js ↔ FastAPI 경계)
-- 진행상황 푸시 방식 (polling / SSE / WebSocket)
+- 모듈별 엔드포인트 분담 (Next.js ↔ FastAPI 경계). 큰 원칙은 "AI 모듈=FastAPI, 트리거/조회=Next.js"
+- 진행상황 푸시 방식 (polling / SSE / WebSocket) — 5단계라 SSE 유리할 듯
 - 가이드 sync 트리거 (배포 시? 수동 어드민? 둘 다?)
+- 모듈 4 위치: `ai/pipelines/analysis/module_4_dcf.py` 안 vs `ai/dcf_engine/` 별도 (시뮬레이션·시나리오 모듈도 사용 가능성)
 
 ---
 
 ## 11. 다음 단계
 
-1. 디렉터리 스캐폴딩 + 각 폴더 placeholder README
-2. 루트 `README.md`, `.gitignore`, `package.json` (workspace), `pyproject.toml`
-3. Supabase 마이그레이션 `0001_init.sql` (위 스키마)
-4. **첫 기능 — `analysis` 파이프라인**: 가이드 마크다운 + ticker → AI 호출 → `analyses` 행 → 웹에서 조회. 이걸 만들면서 백엔드 분담·진행상황 푸시 방식 확정
+**완료**:
+1. ✅ 디렉터리 스캐폴딩 + 각 폴더 placeholder README
+2. ✅ 루트 `README.md`, `.gitignore`
+3. ✅ 분석 파이프라인 모듈 가이드 스텁 (5 pipeline + 2 reference)
+4. ✅ JSON 스키마 스캐폴딩 (`packages/shared-types/schemas/`)
+
+**다음**:
+5. 모듈 가이드 본문 작성 (사용자 검수하며 모듈별 진행)
+   - reference/philosophy.md → reference/dcf_methods.md → pipeline 1~5 순서
+6. 첫 분석 1건 수동 생성 (작성된 가이드로 ORCL 또는 다른 종목 시범)
+7. JSON 스키마 본 필드 확정 (가이드 본문 작성과 함께)
+8. Supabase 마이그레이션 `0001_init.sql` (위 §5 스키마)
+9. workspace 설정 (`pnpm-workspace.yaml`, 루트 `package.json`)
+10. **모듈 4 (DCF 엔진) 파이썬 구현** — 가이드보다 빠르게 만들 수 있음 (수식이 명확)
+11. AI 모듈 1·2·3·5 파이썬 구현 + 오케스트레이션
