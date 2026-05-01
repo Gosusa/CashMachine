@@ -4,6 +4,7 @@ name: dcf_methods
 version: 0.3.0
 referenced_by:
   - pipeline/01_business.md     # 사업부 유형 인식
+  - pipeline/02_growth.md       # 복리 엔진 WACC 정의 + dcf_method_review 판단
   - pipeline/03_dcf_factors.md  # 사업부별 DCF 방법 선정 + Factor 산정
   - pipeline/04_dcf_compute.md  # Python 코드 엔진 명세
 ---

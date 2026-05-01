@@ -6,6 +6,7 @@ implementation: ai
 depends_on:
   - reference/philosophy.md
   - reference/dcf_methods.md
+  - reference/factor_catalog.md
 inputs:
   - ticker
 outputs:
@@ -28,6 +29,7 @@ outputs:
 - **종목 코드** (예: ORCL, AAPL)
 - [reference/philosophy.md](../reference/philosophy.md) — 가치관 렌즈 (해자·이익·성장·전략 의도 등)
 - [reference/dcf_methods.md](../reference/dcf_methods.md) — 사업부 유형 판별 (DCF 방법 후보 산정용)
+- [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3 factor 산출에 필요한 M1 핸드오프 필드 인식 (§4.1 참조)
 - **외부 데이터** (AI가 직접 조회):
   - 최신 10-K, 10-Q (공시 세그먼트, 매출·이익 분포, 단위 경제학)
   - 경쟁자 공시 + 산업 리포트 (해자 검증·경쟁 분석)
@@ -339,6 +341,7 @@ philosophy §3 6개 카테고리 중 **단일** 선택 + 근거 (성장률·시�
 - 다음 모듈: [02_growth.md](./02_growth.md) — business.json을 받아 사업부별 성장 시나리오 정립
 - 가치관 참조: [reference/philosophy.md](../reference/philosophy.md)
 - DCF 방법 카탈로그: [reference/dcf_methods.md](../reference/dcf_methods.md)
+- Factor 카탈로그: [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3가 활용하는 M1 핸드오프 필드 매핑
 
 ---
 

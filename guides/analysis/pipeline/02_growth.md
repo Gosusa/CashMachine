@@ -5,6 +5,8 @@ version: 0.3.0
 implementation: ai
 depends_on:
   - reference/philosophy.md
+  - reference/dcf_methods.md
+  - reference/factor_catalog.md
 inputs:
   - business.json    # 모듈 1 출력
 outputs:
@@ -30,6 +32,8 @@ outputs:
   - **(c) 시나리오 정립에 활용**: `conclusion.confirmed_strengths`, `conclusion.confirmed_vulnerabilities`
   - **baseline**: `revenue_amount`, `operating_income_amount`, `revenue_growth_yoy`, `fiscal_year`
 - [reference/philosophy.md](../reference/philosophy.md) — 성장 lens (10배 요소·필요 CAGR·규모 저항·재투자 ROIC·자본 경량성)
+- [reference/dcf_methods.md](../reference/dcf_methods.md) — (b) 8번 "복리 엔진" WACC 정의, (e) `dcf_method_review` revise 판단 시 §2 판별표 참조
+- [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3 factor 산출에 필요한 M2 핸드오프 필드 인식 (§4.2 참조)
 - **외부 데이터** (AI가 직접 조회):
   - 산업 리포트 (TAM·성장률·침투율 — 변화 동인·시나리오 근거)
   - 경쟁자 가이던스·실적 (시장점유율·가격 추이 — 차별점·증거)
@@ -346,6 +350,8 @@ outputs:
 - 이전 모듈: [01_business.md](./01_business.md) — business.json 입력
 - 다음 모듈: [03_dcf_factors.md](./03_dcf_factors.md) — growth.json을 받아 정량 factor 산정 (성장 관련) + 자체 도메인 factor (WACC·세율 등) 추가
 - 가치관 (성장 lens): [reference/philosophy.md](../reference/philosophy.md)
+- DCF 방법 카탈로그: [reference/dcf_methods.md](../reference/dcf_methods.md) — `dcf_method_review` revise 판단 시 §2 판별표 참조, 복리 엔진 질문의 WACC 정의
+- Factor 카탈로그: [reference/factor_catalog.md](../reference/factor_catalog.md) — 모듈 3가 활용하는 M2 핸드오프 필드 매핑 (특히 §4.2 scenario_anchors·structural_insights)
 
 ---
 

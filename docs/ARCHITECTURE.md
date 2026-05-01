@@ -188,8 +188,9 @@ subscriptions(id, user_id, stripe_customer_id, stripe_sub_id, plan, status, curr
 
 ```
 [reference 가이드 — 모든 모듈이 참조]
- ├─ philosophy.md
- └─ dcf_methods.md
+ ├─ philosophy.md       # 가치관·렌즈 (M1·M2·M5)
+ ├─ dcf_methods.md      # 5가지 DCF 방법 변수·공식·제약 (M1·M2·M3·M4)
+ └─ factor_catalog.md   # factor 정의·출처 매핑 (M1·M2·M3)
         │
         ▼ (필요 시 참조)
 
@@ -213,10 +214,10 @@ subscriptions(id, user_id, stripe_customer_id, stripe_sub_id, plan, status, curr
 
 | 모듈 | 구현 | 입력 | 출력 |
 |---|---|---|---|
-| 1. 사업 분석 | AI | ticker, philosophy, dcf_methods | business.json/md |
-| 2. 성장 분석 | AI | business.json, philosophy | growth.json/md |
-| 3. DCF Factor 산정 | AI | business.json, growth.json, dcf_methods | dcf_factors.json |
-| 4. DCF 계산 | **Python 코드** | dcf_factors.json | dcf_results.json |
+| 1. 사업 분석 | AI | ticker, philosophy, dcf_methods, factor_catalog | business.json/md |
+| 2. 성장 분석 | AI | business.json, philosophy, dcf_methods, factor_catalog | growth.json/md |
+| 3. DCF Factor 산정 | AI | business.json, growth.json, dcf_methods, factor_catalog | dcf_factors.json |
+| 4. DCF 계산 | **Python 코드** | dcf_factors.json, dcf_methods | dcf_results.json |
 | 5. 리포트 작성 | AI | business.json, growth.json, dcf_results.json, philosophy | report.md/json |
 
 **모듈 4가 코드인 이유**: DCF는 결정적 산수. AI가 산수 틀리면 안 됨. Factor가 정해지면 같은 입력 = 같은 출력 보장. 사용자가 UI에서 Factor 슬라이더 만져도 즉시 새 결과 (AI 재호출 X).
@@ -255,8 +256,9 @@ guides/
 │   │   ├── 04_dcf_compute.md  # 얇음, 코드 명세
 │   │   └── 05_report.md
 │   └── reference/   # 지식 베이스 (모든 모듈이 참조)
-│       ├── philosophy.md
-│       └── dcf_methods.md
+│       ├── philosophy.md      # 가치관·렌즈
+│       ├── dcf_methods.md     # 5가지 DCF 방법 변수·공식·제약
+│       └── factor_catalog.md  # factor 정의·출처 매핑 (single source of truth)
 ├── scenario/, earnings/, news_impact/  # 다른 도메인 (추후)
 ```
 
