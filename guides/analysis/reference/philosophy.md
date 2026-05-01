@@ -167,17 +167,15 @@ referenced_by:
 | 회생주 (Turnaround) | 부진 → 정상화 진행 중 |
 | 자산주 (Asset Play) | NAV 중심, 자산 가치 실현 사업 |
 
-분류는 가변적 — 시간이 지나면 카테고리는 이동할 수 있다 (Fast Grower → Stalwart, Cyclical → Stalwart 일부 성격 부상 등). **현재 상태와 전환 방향을 함께 기록**한다. 모호하면 두 카테고리 병기 + 전환 방향으로 해소.
+분류는 가변적 — 시간이 지나면 카테고리는 이동할 수 있다 (Fast Grower → Stalwart, Cyclical → Stalwart 일부 성격 부상 등). 사업부별 분석 시점에는 **단일 카테고리**로 분류하고, 회사 종합에서 사업부 카테고리 mix를 복합 표기 (예: "Stalwart-주력 + Fast Grower-신규")로 표현한다.
 
 > 15% 복리 실현이 구조적으로 어려운 카테고리(Cyclical · Slow Grower · Turnaround · Asset Play)는 분석 결과에서 자연스럽게 "조건부" 또는 "NO" 판정이 나오는 게 정상. 별도 게이팅 불필요.
 
-### 카테고리별 분석 도구·해석
+### 카테고리의 활용 범위
 
-카테고리에 따라 적용할 분석 도구·해석 방식·주의 포인트는 해당 모듈 가이드에서 다룬다 — philosophy 레벨에서는 다루지 않는다:
+카테고리는 **분석의 출발점·맥락 정보**로만 활용된다. 모듈 1·2는 카테고리와 무관하게 **동일 framework**로 분석한다 — 카테고리별 분석 깊이·우선순위 분기 X (clean over exceptions).
 
-- DCF 방법 선정 + 카테고리별 멀티플 해석 (예: Cyclical PER 역작동): [reference/dcf_methods.md](./dcf_methods.md)
-- 사업부별 분석 깊이·우선순위 (예: Turnaround 재무 정상화, Asset Play NAV 실현 경로): [pipeline/01_business.md](../pipeline/01_business.md)
-- 카테고리별 성장 평가 특이점 (예: Fast Grower 2단계 종료 신호, Slow Grower 배당+성장 합산): [pipeline/02_growth.md](../pipeline/02_growth.md)
+DCF 방법 선정·해석은 카테고리별 차이가 큰 영역이라 별도 처리: [reference/dcf_methods.md](./dcf_methods.md) (예: Cyclical PER 역작동).
 
 ---
 
