@@ -334,15 +334,50 @@ guides/
 **완료**:
 1. ✅ 디렉터리 스캐폴딩 + 각 폴더 placeholder README
 2. ✅ 루트 `README.md`, `.gitignore`
-3. ✅ 분석 파이프라인 모듈 가이드 스텁 (5 pipeline + 2 reference)
-4. ✅ JSON 스키마 스캐폴딩 (`packages/shared-types/schemas/`)
+3. ✅ 분석 파이프라인 모듈 가이드 본문 (5 pipeline + 3 reference)
+   - philosophy / dcf_methods / factor_catalog
+   - 01_business / 02_growth / 03_dcf_factors / 04_dcf_compute / 05_report
+4. ✅ **Option A scenario model 도입** (commit `cb605d4`)
+   - 시나리오 = driver 1개 변동 + 인과(causal) + invariant
+   - Method A (revenue_cagr), C (ROE start/terminal), E (metric) 옵션 A 적용
+   - Method B는 단순 합산 모델 (kind/value/multiple)
+5. ✅ **Time trajectory + Corporate overhead** (commit `cb605d4`)
+   - capex_pct_revenue·ebit_margin_baseline → start/end (buildout·early-stage 표현)
+   - segment-direct margin + 회사 차원 영구 PV 차감 (`corporate_overhead_pv`)
+6. ✅ **Two judgments** — M2가 두 판정 산출 (15%+ + 해자 평생 보유), M5는 직접 매핑
+7. ✅ Zod schema 5개 본문 (`packages/shared-types/schemas/*.ts`) — 옵션 A 패턴 반영
+8. ✅ ORCL/KKR 시범 검증 — Method A (ORCL CSLS), Method C (KKR Insurance) 작동
 
-**다음**:
-5. 모듈 가이드 본문 작성 (사용자 검수하며 모듈별 진행)
-   - reference/philosophy.md → reference/dcf_methods.md → pipeline 1~5 순서
-6. 첫 분석 1건 수동 생성 (작성된 가이드로 ORCL 또는 다른 종목 시범)
-7. JSON 스키마 본 필드 확정 (가이드 본문 작성과 함께)
-8. Supabase 마이그레이션 `0001_init.sql` (위 §5 스키마)
-9. workspace 설정 (`pnpm-workspace.yaml`, 루트 `package.json`)
-10. **모듈 4 (DCF 엔진) 파이썬 구현** — 가이드보다 빠르게 만들 수 있음 (수식이 명확)
-11. AI 모듈 1·2·3·5 파이썬 구현 + 오케스트레이션
+**다음 (우선순위 순)**:
+
+9. **M4 Python 엔진 구현** (`ai/pipelines/analysis/module_4_dcf.py`)
+   - 가이드 04_dcf_compute.md §5 알고리즘 그대로 구현
+   - Method A (FCF DCF) 구현 + Method B/C/D/E stub (NotImplementedError)
+   - 입력 검증 (terminal_g·start/end 등) + corporate_overhead_pv 차감
+   - 시범 단계는 ORCL 폴더에 일회용 compute_dcf.py 작성 — 정식 모듈로 이전
+
+10. **pnpm workspace setup**
+    - 루트 `package.json`, `pnpm-workspace.yaml`
+    - `packages/shared-types/package.json` + `tsconfig.json` (zod 의존성)
+    - `tsc --noEmit` 검증 가능하게
+
+11. **Supabase 마이그레이션 `0001_init.sql`** — §5 데이터 모델 적용
+    - profiles, tickers, ticker_segments, prices_daily, sp500_daily
+    - guide_versions, analyses, analysis_business/growth/dcf_factors/dcf_results/report
+    - scenarios, earnings_events, thesis_checkpoints, portfolios·holdings·simulations
+    - news_items·news_impact, notifications, subscriptions
+
+12. **AI 모듈 1·2·3·5 파이썬 구현 + 오케스트레이션** (`ai/pipelines/analysis/`)
+    - 가이드 캐싱 (Anthropic prompt caching)
+    - 모듈별 입력 검증 + 출력 zod schema 검증
+    - DAG 오케스트레이션 (M1 → M2 → M3 → M4 → M5)
+
+13. **다른 도메인 가이드** (MVP 후 확장)
+    - `guides/scenario/` — 사용자 시나리오 합성
+    - `guides/earnings/` — 분기 실적 정합성 검증 + 분기 업데이트 워크플로우
+    - `guides/news_impact/` — 뉴스 영향 평가
+
+**시범 단계 한계 (운영 단계 해결)**:
+- 외부 데이터 자동 조회 (Beta·재무제표·EDGAR) — 작성일 시점 정확도
+- M4 Python 엔진 자동 실행 (현재는 폴더별 일회용)
+- Schema vs 가이드 자동 동기화 (현재는 수동)
